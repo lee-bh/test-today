@@ -1,14 +1,889 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<style>
-		html{font-size: 4rem;}
-	</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오늘의 날씨 - 감성 날씨 예보 서비스</title>
+  <meta name="description" content="실시간 날씨 정보와 상세한 대기 상태를 한눈에 확인하세요. 세련된 비주얼과 인터랙티브 요소가 결합된 프리미엄 날씨 대시보드입니다.">
+  
+  <!-- SEO Open Graph -->
+  <meta property="og:title" content="오늘의 날씨 - 감성 날씨 예보">
+  <meta property="og:description" content="실시간 날씨 정보와 상세한 대기 상태를 한눈에 확인하세요.">
+  <meta property="og:type" content="website">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    /* CSS Variables for Premium Design Tokens */
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-highlight: rgba(255, 255, 255, 0.15);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent-sunny: #fbbf24;
+      --accent-glow: rgba(139, 92, 246, 0.3);
+      --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Weather Specific Theme Colors (Dynamic Overlays) */
+    .theme-sunny {
+      --bg-gradient: linear-gradient(135deg, #075985 0%, #0369a1 50%, #0284c7 100%);
+      --accent-glow: rgba(251, 191, 36, 0.25);
+    }
+
+    .theme-cloudy {
+      --bg-gradient: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
+      --accent-glow: rgba(148, 163, 184, 0.25);
+    }
+
+    .theme-rainy {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f1e36 100%);
+      --accent-glow: rgba(59, 130, 246, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+      perspective: 1000px;
+      transition: var(--transition-smooth);
+    }
+
+    /* Ambient Background Glows */
+    .glow-orb-1 {
+      position: absolute;
+      top: 15%;
+      left: 10%;
+      width: 350px;
+      height: 350px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0,0,0,0) 70%);
+      pointer-events: none;
+      z-index: -1;
+      filter: blur(40px);
+    }
+
+    .glow-orb-2 {
+      position: absolute;
+      bottom: 15%;
+      right: 10%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, rgba(0,0,0,0) 70%);
+      pointer-events: none;
+      z-index: -1;
+      filter: blur(50px);
+    }
+
+    /* Container & Layout */
+    .weather-dashboard {
+      width: 90%;
+      max-width: 920px;
+      margin: 40px auto;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 32px;
+      box-shadow: var(--card-shadow);
+      padding: 40px;
+      display: grid;
+      grid-template-columns: 1.2fr 1.8fr;
+      gap: 40px;
+      position: relative;
+      overflow: hidden;
+      animation: zoomIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Inner Highlights */
+    .weather-dashboard::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at top left, var(--glass-highlight) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* Left Column: Main Hero Weather Card */
+    .hero-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-right: 1px solid var(--glass-border);
+      padding-right: 40px;
+      position: relative;
+    }
+
+    .header-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    .location-selector {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      color: var(--text-primary);
+      padding: 10px 18px;
+      border-radius: 50px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+      transition: var(--transition-smooth);
+      font-family: inherit;
+    }
+
+    .location-selector:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--glass-highlight);
+      box-shadow: 0 4px 15px rgba(255, 255, 255, 0.05);
+      transform: translateY(-2px);
+    }
+
+    .unit-toggle {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      color: var(--text-primary);
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-smooth);
+    }
+
+    .unit-toggle:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--glass-highlight);
+      transform: rotate(15deg) scale(1.05);
+    }
+
+    .date-time-container {
+      margin-bottom: 10px;
+    }
+
+    .current-date {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+      letter-spacing: 0.5px;
+    }
+
+    .current-time {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-top: 4px;
+      opacity: 0.9;
+    }
+
+    /* Beautiful Floating Weather Icon */
+    .weather-visual {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 0;
+      position: relative;
+    }
+
+    .weather-icon-svg {
+      width: 140px;
+      height: 140px;
+      filter: drop-shadow(0 15px 25px var(--accent-glow));
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .temp-status-container {
+      text-align: center;
+      margin-top: 15px;
+    }
+
+    .temperature-wrapper {
+      display: inline-flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    .current-temp {
+      font-size: 5.5rem;
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1;
+      background: linear-gradient(to bottom, #ffffff 60%, #e2e8f0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .temp-unit {
+      font-size: 2.2rem;
+      font-weight: 300;
+      margin-top: 10px;
+      margin-left: 2px;
+      color: var(--text-primary);
+      opacity: 0.85;
+    }
+
+    .weather-condition {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-top: 8px;
+      color: var(--text-primary);
+      letter-spacing: 0.2px;
+    }
+
+    .weather-summary-text {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    /* Right Column: Detailed Stats & Forecast */
+    .details-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .panel-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-title::before {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 18px;
+      background: linear-gradient(to bottom, #818cf8, #c084fc);
+      border-radius: 2px;
+    }
+
+    /* Weather Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .metric-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: var(--transition-smooth);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .metric-card::after {
+      content: '';
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      top: -50px;
+      right: -50px;
+      border-radius: 50%;
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .metric-icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-smooth);
+    }
+
+    .metric-card:hover .metric-icon-box {
+      background: rgba(255, 255, 255, 0.08);
+      transform: scale(1.05);
+    }
+
+    .metric-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .metric-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .metric-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* Hourly Forecast Section */
+    .forecast-section {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .forecast-scroll-container {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      padding: 8px 4px 16px 4px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    }
+
+    .forecast-scroll-container::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .forecast-scroll-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+    }
+
+    .forecast-scroll-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .forecast-card {
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      min-width: 76px;
+      padding: 16px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      transition: var(--transition-smooth);
+    }
+
+    .forecast-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.12);
+      transform: scale(1.05);
+    }
+
+    .forecast-card.active {
+      background: linear-gradient(135deg, rgba(129, 140, 248, 0.15) 0%, rgba(192, 132, 252, 0.15) 100%);
+      border-color: rgba(168, 85, 247, 0.3);
+    }
+
+    .forecast-time {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .forecast-icon {
+      width: 32px;
+      height: 32px;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+    }
+
+    .forecast-temp {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    /* Dynamic SVG weather icon animations */
+    @keyframes float {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(2deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
+    }
+
+    @keyframes spin-slow {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.95; }
+      50% { transform: scale(1.05); opacity: 1; }
+    }
+
+    @keyframes rain-drip {
+      0% { transform: translateY(-2px); opacity: 0; }
+      50% { opacity: 0.9; }
+      100% { transform: translateY(8px); opacity: 0; }
+    }
+
+    .anim-spin {
+      transform-origin: center;
+      animation: spin-slow 20s linear infinite;
+    }
+
+    .anim-pulse {
+      transform-origin: center;
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    .anim-drip-1 { animation: rain-drip 1.5s infinite linear; }
+    .anim-drip-2 { animation: rain-drip 1.5s infinite linear 0.4s; }
+    .anim-drip-3 { animation: rain-drip 1.5s infinite linear 0.8s; }
+
+    /* Enter animation */
+    @keyframes zoomIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96) translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    /* Responsive Design adjustments */
+    @media (max-width: 768px) {
+      .weather-dashboard {
+        grid-template-columns: 1fr;
+        padding: 30px 20px;
+        gap: 30px;
+        margin: 20px auto;
+      }
+
+      .hero-panel {
+        border-right: none;
+        border-bottom: 1px solid var(--glass-border);
+        padding-right: 0;
+        padding-bottom: 30px;
+      }
+
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+      
+      .weather-icon-svg {
+        width: 120px;
+        height: 120px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .current-temp {
+        font-size: 4.5rem;
+      }
+    }
+  </style>
 </head>
 <body>
-자 코드를 바꿔봅니다. 
-오늘의 테스트 코드입니다.
+
+  <!-- Dynamic ambient glows -->
+  <div class="glow-orb-1"></div>
+  <div class="glow-orb-2"></div>
+
+  <main class="weather-dashboard" id="mainDashboard">
+    <!-- Left Panel: Current Weather Hero -->
+    <section class="hero-panel">
+      <div class="header-info">
+        <select class="location-selector" id="locationSelect" aria-label="지역 선택" onchange="changeCity(this.value)">
+          <option value="Seoul">📍 서울특별시</option>
+          <option value="Busan">📍 부산광역시</option>
+          <option value="Jeju">📍 제주특별자치도</option>
+        </select>
+        
+        <button class="unit-toggle" id="unitToggleBtn" onclick="toggleUnit()" aria-label="온도 단위 전환">°C</button>
+      </div>
+
+      <div class="date-time-container">
+        <div class="current-date" id="currentDate">2026년 5월 26일 화요일</div>
+        <div class="current-time" id="currentTime">오전 10:05</div>
+      </div>
+
+      <div class="weather-visual">
+        <!-- SVG graphic container that changes dynamically -->
+        <div id="weatherIconContainer">
+          <!-- Default Sunny Icon -->
+          <svg class="weather-icon-svg" viewBox="0 0 100 100">
+            <defs>
+              <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#fffbeb" />
+                <stop offset="60%" stop-color="#fef08a" />
+                <stop offset="100%" stop-color="#f59e0b" stop-opacity="0" />
+              </radialGradient>
+            </defs>
+            <circle cx="50" cy="50" r="30" fill="url(#sunGlow)" class="anim-pulse" />
+            <circle cx="50" cy="50" r="18" fill="#fbbf24" />
+            <g class="anim-spin">
+              <line x1="50" y1="12" x2="50" y2="22" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+              <line x1="50" y1="78" x2="50" y2="88" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+              <line x1="12" y1="50" x2="22" y2="50" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+              <line x1="78" y1="50" x2="88" y2="50" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+              <line x1="23" y1="23" x2="30" y2="30" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+              <line x1="70" y1="70" x2="77" y2="77" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+              <line x1="77" y1="23" x2="70" y2="30" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+              <line x1="30" y1="70" x2="23" y2="77" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <div class="temp-status-container">
+        <div class="temperature-wrapper">
+          <span class="current-temp" id="tempVal">22</span>
+          <span class="temp-unit" id="tempUnitLabel">°C</span>
+        </div>
+        <div class="weather-condition" id="weatherCond">맑음</div>
+        <div class="weather-summary-text" id="weatherSummary">푸르고 쾌청한 하늘입니다. 야외 활동을 하기에 완벽한 날씨예요.</div>
+      </div>
+    </section>
+
+    <!-- Right Panel: Detailed Metrics and Forecasts -->
+    <section class="details-panel">
+      <div>
+        <h2 class="panel-title">상세 날씨 정보</h2>
+        
+        <div class="metrics-grid">
+          <!-- Metric Card 1: Wind Speed -->
+          <div class="metric-card">
+            <div class="metric-icon-box">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round">
+                <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" />
+              </svg>
+            </div>
+            <div class="metric-info">
+              <span class="metric-label">바람</span>
+              <span class="metric-value" id="valWind">3.2 m/s</span>
+            </div>
+          </div>
+
+          <!-- Metric Card 2: Humidity -->
+          <div class="metric-card">
+            <div class="metric-icon-box">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" style="display: none;" />
+                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+              </svg>
+            </div>
+            <div class="metric-info">
+              <span class="metric-label">습도</span>
+              <span class="metric-value" id="valHumidity">45%</span>
+            </div>
+          </div>
+
+          <!-- Metric Card 3: UV Index -->
+          <div class="metric-card">
+            <div class="metric-icon-box">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+              </svg>
+            </div>
+            <div class="metric-info">
+              <span class="metric-label">자외선 지수</span>
+              <span class="metric-value" id="valUV">보통 (4)</span>
+            </div>
+          </div>
+
+          <!-- Metric Card 4: Rain Prob -->
+          <div class="metric-card">
+            <div class="metric-icon-box">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25" />
+                <path d="M8 16v4M12 14v6M16 16v4" />
+              </svg>
+            </div>
+            <div class="metric-info">
+              <span class="metric-label">강수 확률</span>
+              <span class="metric-value" id="valRain">10%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hourly Forecast Slider -->
+      <div class="forecast-section">
+        <h2 class="panel-title">시간대별 예보</h2>
+        <div class="forecast-scroll-container" id="forecastContainer">
+          <!-- Generated via Javascript -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // State management
+    let currentUnit = 'C'; // 'C' or 'F'
+    let currentCity = 'Seoul';
+
+    // Mock Data for a premium demo feel
+    const weatherData = {
+      Seoul: {
+        temp: 22,
+        condition: '맑음',
+        summary: '맑고 선선하여 야외 산책이나 드라이브를 즐기기에 무척 좋습니다.',
+        wind: '2.8 m/s',
+        humidity: '42%',
+        uv: '보통 (4)',
+        rain: '10%',
+        themeClass: 'theme-sunny',
+        icon: 'sunny',
+        hourly: [
+          { time: '11:00', temp: 23, icon: 'sunny' },
+          { time: '13:00', temp: 25, icon: 'sunny' },
+          { time: '15:00', temp: 26, icon: 'sunny' },
+          { time: '17:00', temp: 24, icon: 'cloudy' },
+          { time: '19:00', temp: 21, icon: 'cloudy' },
+          { time: '21:00', temp: 18, icon: 'cloudy' },
+          { time: '23:00', temp: 16, icon: 'cloudy' }
+        ]
+      },
+      Busan: {
+        temp: 19,
+        condition: '구름 많음',
+        summary: '바람이 불어 다소 선선하게 느껴질 수 있으니 얇은 외투를 챙기세요.',
+        wind: '5.4 m/s',
+        humidity: '65%',
+        uv: '낮음 (2)',
+        rain: '30%',
+        themeClass: 'theme-cloudy',
+        icon: 'cloudy',
+        hourly: [
+          { time: '11:00', temp: 19, icon: 'cloudy' },
+          { time: '13:00', temp: 20, icon: 'cloudy' },
+          { time: '15:00', temp: 21, icon: 'sunny' },
+          { time: '17:00', temp: 20, icon: 'sunny' },
+          { time: '19:00', temp: 18, icon: 'cloudy' },
+          { time: '21:00', temp: 17, icon: 'cloudy' },
+          { time: '23:00', temp: 15, icon: 'rainy' }
+        ]
+      },
+      Jeju: {
+        temp: 17,
+        condition: '비',
+        summary: '오늘 제주지역은 종일 비 예보가 있습니다. 우산을 꼭 챙기시고 안전 운전하세요.',
+        wind: '7.2 m/s',
+        humidity: '88%',
+        uv: '매우낮음 (1)',
+        rain: '90%',
+        themeClass: 'theme-rainy',
+        icon: 'rainy',
+        hourly: [
+          { time: '11:00', temp: 17, icon: 'rainy' },
+          { time: '13:00', temp: 18, icon: 'rainy' },
+          { time: '15:00', temp: 18, icon: 'rainy' },
+          { time: '17:00', temp: 17, icon: 'rainy' },
+          { time: '19:00', temp: 16, icon: 'cloudy' },
+          { time: '21:00', temp: 15, icon: 'cloudy' },
+          { time: '23:00', temp: 14, icon: 'sunny' }
+        ]
+      }
+    };
+
+    // SVG icon templates
+    const icons = {
+      sunny: `
+        <svg class="weather-icon-svg" viewBox="0 0 100 100">
+          <defs>
+            <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#fffbeb" />
+              <stop offset="60%" stop-color="#fef08a" />
+              <stop offset="100%" stop-color="#f59e0b" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+          <circle cx="50" cy="50" r="30" fill="url(#sunGlow)" class="anim-pulse" />
+          <circle cx="50" cy="50" r="18" fill="#fbbf24" />
+          <g class="anim-spin">
+            <line x1="50" y1="12" x2="50" y2="22" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+            <line x1="50" y1="78" x2="50" y2="88" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+            <line x1="12" y1="50" x2="22" y2="50" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+            <line x1="78" y1="50" x2="88" y2="50" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+            <line x1="23" y1="23" x2="30" y2="30" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+            <line x1="70" y1="70" x2="77" y2="77" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+            <line x1="77" y1="23" x2="70" y2="30" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+            <line x1="30" y1="70" x2="23" y2="77" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+          </g>
+        </svg>
+      `,
+      cloudy: `
+        <svg class="weather-icon-svg" viewBox="0 0 100 100">
+          <defs>
+            <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#f8fafc" />
+              <stop offset="100%" stop-color="#cbd5e1" />
+            </linearGradient>
+            <linearGradient id="sunGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#fbbf24" />
+              <stop offset="100%" stop-color="#d97706" />
+            </linearGradient>
+          </defs>
+          <circle cx="36" cy="36" r="14" fill="url(#sunGrad)" class="anim-pulse" />
+          <path d="M30 65h35a16 16 0 0 0 6-30.8 14 14 0 0 0-26.6-4.5A16 16 0 0 0 30 65z" fill="url(#cloudGrad)" filter="drop-shadow(0 4px 8px rgba(0,0,0,0.1))"/>
+        </svg>
+      `,
+      rainy: `
+        <svg class="weather-icon-svg" viewBox="0 0 100 100">
+          <defs>
+            <linearGradient id="rainCloudGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#94a3b8" />
+              <stop offset="100%" stop-color="#475569" />
+            </linearGradient>
+          </defs>
+          <path d="M30 55h35a16 16 0 0 0 6-30.8 14 14 0 0 0-26.6-4.5A16 16 0 0 0 30 55z" fill="url(#rainCloudGrad)" />
+          <g stroke="#60a5fa" stroke-width="3" stroke-linecap="round">
+            <line x1="38" y1="65" x2="34" y2="75" class="anim-drip-1" />
+            <line x1="50" y1="65" x2="46" y2="75" class="anim-drip-2" />
+            <line x1="62" y1="65" x2="58" y2="75" class="anim-drip-3" />
+          </g>
+        </svg>
+      `
+    };
+
+    const smallIcons = {
+      sunny: `
+        <svg viewBox="0 0 100 100" class="forecast-icon">
+          <circle cx="50" cy="50" r="22" fill="#fbbf24" />
+        </svg>
+      `,
+      cloudy: `
+        <svg viewBox="0 0 100 100" class="forecast-icon">
+          <path d="M25 65h50a20 20 0 0 0 8-38 18 18 0 0 0-33-6 20 20 0 0 0-25 44z" fill="#cbd5e1" />
+        </svg>
+      `,
+      rainy: `
+        <svg viewBox="0 0 100 100" class="forecast-icon">
+          <path d="M25 55h50a20 20 0 0 0 8-38 18 18 0 0 0-33-6 20 20 0 0 0-25 44z" fill="#64748b" />
+          <line x1="35" y1="65" x2="31" y2="75" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" />
+          <line x1="50" y1="65" x2="46" y2="75" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" />
+          <line x1="65" y1="65" x2="61" y2="75" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" />
+        </svg>
+      `
+    };
+
+    // Calculate current datetime beautifully
+    function updateDateTime() {
+      const now = new Date();
+      const optionsDate = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+      const optionsTime = { hour: '2-digit', minute: '2-digit', hour12: true };
+      
+      document.getElementById('currentDate').innerText = now.toLocaleDateString('ko-KR', optionsDate);
+      document.getElementById('currentTime').innerText = now.toLocaleTimeString('ko-KR', optionsTime);
+    }
+
+    // Conversion helper
+    function convertTemp(celsius, unit) {
+      if (unit === 'F') {
+        return Math.round((celsius * 9) / 5 + 32);
+      }
+      return celsius;
+    }
+
+    // Main Update Function
+    function renderWeather() {
+      const data = weatherData[currentCity];
+      const dashboard = document.getElementById('mainDashboard');
+
+      // Update Theme Class on body/container
+      document.body.className = ''; 
+      document.body.classList.add(data.themeClass);
+
+      // Render Temp & Condition
+      const displayTemp = convertTemp(data.temp, currentUnit);
+      document.getElementById('tempVal').innerText = displayTemp;
+      document.getElementById('weatherCond').innerText = data.condition;
+      document.getElementById('weatherSummary').innerText = data.summary;
+
+      // Render Icon
+      document.getElementById('weatherIconContainer').innerHTML = icons[data.icon];
+
+      // Render Secondary Stats
+      document.getElementById('valWind').innerText = data.wind;
+      document.getElementById('valHumidity').innerText = data.humidity;
+      document.getElementById('valUV').innerText = data.uv;
+      document.getElementById('valRain').innerText = data.rain;
+
+      // Render Hourly Forecast
+      const forecastContainer = document.getElementById('forecastContainer');
+      forecastContainer.innerHTML = '';
+
+      data.hourly.forEach((hour, idx) => {
+        const itemTemp = convertTemp(hour.temp, currentUnit);
+        const isActive = idx === 0 ? 'active' : '';
+        const cardHtml = `
+          <div class="forecast-card ${isActive}">
+            <span class="forecast-time">${hour.time}</span>
+            ${smallIcons[hour.icon]}
+            <span class="forecast-temp">${itemTemp}°</span>
+          </div>
+        `;
+        forecastContainer.innerHTML += cardHtml;
+      });
+    }
+
+    // Actions
+    function changeCity(city) {
+      currentCity = city;
+      renderWeather();
+    }
+
+    function toggleUnit() {
+      currentUnit = currentUnit === 'C' ? 'F' : 'C';
+      document.getElementById('unitToggleBtn').innerText = `°${currentUnit}`;
+      document.getElementById('tempUnitLabel').innerText = `°${currentUnit}`;
+      renderWeather();
+    }
+
+    // Init
+    updateDateTime();
+    renderWeather();
+    // Keep time updated
+    setInterval(updateDateTime, 30000);
+  </script>
 </body>
 </html>
